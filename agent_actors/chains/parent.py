@@ -14,6 +14,44 @@ class Plan(JSONChain):
                 template_format="jinja2",
                 template=dedent(
                     """\
+                    Assistant is an AI designed to assign sub-tasks to team members based on their traits and working memory. The output should be in JSON format.
+
+                    Context: {{ context }}
+                    Task: {{ task }}
+                    Team members: {{ child_summary }}
+
+                    Assign the minimal set of new sub-tasks for your team members to complete. Choose team members who are best suited for each sub-task based on their traits and working memory. Team members can have multiple sub-tasks assigned to them. Do not duplicate work. Do not assign tasks to non-existent team members.
+
+                    Dependencies must refer to existing sub-tasks. When referencing other tasks, use the format [worker #.task #]. Please provide the output as a JSON array in the following format:
+
+                    ```
+                    [
+                        {
+                            "task_id": <incrementing int starting at 0 per child>,
+                            "child_id": <assigned team member id>,
+                            "task": <task task>,
+                            "dependencies": [{
+                                "child_id": <assigned team member id>,
+                                "task_id": <int>
+                            }]
+                        },
+                        ...
+                    ]
+                    ```
+
+                    Your task is: {{ task }}
+                    """
+                ),
+                input_variables=[
+                    "context",
+                    "task",
+                    "child_summary",
+                ],
+            ),
+        )
+
+# "Plan" - Original
+'''
                     {{ context }}
 
                     Your task is: {{ task }}
@@ -42,16 +80,7 @@ class Plan(JSONChain):
                         ...
                     ]
                     ```
-                    """
-                ),
-                input_variables=[
-                    "context",
-                    "task",
-                    "child_summary",
-                ],
-            ),
-        )
-
+'''
 
 class Adjust(JSONChain):
     @classmethod
@@ -60,8 +89,34 @@ class Adjust(JSONChain):
             **kwargs,
             prompt=PromptTemplate.from_template(
                 template_format="jinja2",
-                template=dedent(
-                    """\
+                    template=dedent(
+                        """\
+                        Assistant is a continuous-improvement AI designed to review tasks completed by agents and decide the next steps. The output should be in JSON format.
+
+                        Context: {{ context }}
+                        Task: {{ task }}
+                        Results: {{ results }}
+
+                        Based on the results, estimate your confidence in having completed the task as a number between 1 and 10. Provide the output as a JSON object in the following format:
+
+                        ```
+                        {
+                            "confidence": <confidence>,
+                            "speak": "<what to say to your copilot>",
+                            "result": <synthesized result satisfying objective>
+                        }
+                        ```
+
+                        Your task is: {{ task }}
+                        """
+                    ),
+
+                ),
+            ),
+
+
+# "Adjust" - Original
+'''
                     {{ context }}
 
                     You are an continuous-improvement AI that reviews tasks completed by agents and decides what to do next.
@@ -80,7 +135,4 @@ class Adjust(JSONChain):
                         "result": <synthesized result satisfying objective>
                     }
                     ```
-                    """
-                ),
-            ),
-        )
+'''

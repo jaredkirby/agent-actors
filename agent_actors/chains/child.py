@@ -14,6 +14,43 @@ class ReActAgent(ZeroShotAgent):
     ) -> LLMChain:
         return super().from_llm_and_tools(
             **kwargs,
+            prefix="Assistant is an AI designed to complete tasks using available tools. Be specific in your response and use the format provided.",
+            format_instructions=dedent(
+                """\
+                Use the following format. You must prepend your conclusion with "Final Answer:":
+
+                Task: the input task you must complete
+                Thought: you should always think about what to do
+                Reasoning: the reasoning behind your thought
+                Action: the action to take, should be one of {tool_names}, and only the tool name
+                Action Input: the input to the action
+                Observation: the result of the action
+                ... (this Thought/Reasoning/Action/Action Input/Observation cycle can repeat N times)
+                Thought: The task has been completed appropriately and accurately
+                Final Answer: the final result of this task, directly, not summarized in any way
+                """
+            ),
+            suffix=dedent(
+                """\
+                Context: {context}
+
+                Your task is: {task}
+                Thought: {agent_scratchpad}\
+                """
+            ),
+            input_variables=[
+                "context",
+                "task",
+                "agent_scratchpad",
+            ],
+        )
+
+
+# "ReActAgent" - Original
+'''
+    ) -> LLMChain:
+        return super().from_llm_and_tools(
+            **kwargs,
             prefix="Complete the task below. Be very specific. You have access to the following tools:",
             format_instructions=dedent(
                 """\
@@ -44,6 +81,7 @@ class ReActAgent(ZeroShotAgent):
                 "agent_scratchpad",
             ],
         )
+'''
 
 
 class Do(MRKLChain):
@@ -74,7 +112,32 @@ class Check(LLMChain):
             prompt=PromptTemplate.from_template(
                 dedent(
                     """\
-                    You are evaluating the result of an AI agent against its task to verify its accurate compmletion.
+                    You are an AI assistant designed to evaluate the results of an AI agent against its assigned task to verify accurate completion. 
+                    If the result accomplishes the task, return "Complete"; otherwise, provide a new task for the agent to complete. Do not embellish your responses.
+
+                    Relevant context: {context}
+                    AI agent's result: {learning}
+
+                    Task: \
+                    """
+                ),
+            ),
+        )
+
+# "Check" - Suggested: Task incorporated into prompt
+'''
+You are an AI assistant designed to evaluate the results of an AI agent against its assigned task to verify accurate completion. If the result accomplishes the task, return "Complete"; otherwise, provide a new task for the agent to complete. Do not embellish your responses.
+
+Task: {task}
+Relevant context: {context}
+AI agent's result: {learning}
+
+Evaluation:
+'''
+
+# "Check" - Original
+'''
+You are evaluating the result of an AI agent against its task to verify its accurate compmletion.
 
                     Here is the relevant context: {context}
 
@@ -85,8 +148,5 @@ class Check(LLMChain):
 
                     Do not embellish.
 
-                    Task: \
-                    """
-                ),
-            ),
-        )
+                    Task:
+'''
